@@ -30,6 +30,11 @@ type Article struct {
 	Content     string    `json:"content"`
 }
 
+func (a *Article) FormatPublishedDate() string {
+	year, month, day := a.PublishedAt.Date()
+	return fmt.Sprintf("%v %d, %d", month, day, year)
+}
+
 type Results struct {
 	Status       string    `json:"status"`
 	TotalResults int       `json:"totalResults"`
@@ -61,7 +66,7 @@ func main() {
 
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "3001"
+		port = "3000"
 	}
 	mux := http.NewServeMux()
 	fs := http.FileServer(http.Dir("assets"))
@@ -69,7 +74,7 @@ func main() {
 
 	mux.HandleFunc("/search", searchHandler)
 	mux.HandleFunc("/", indexHandle)
-	http.ListenAndServe("192.168.31.31:"+port, mux)
+	http.ListenAndServe(":"+port, mux)
 }
 
 func searchHandler(w http.ResponseWriter, r *http.Request) {
@@ -86,9 +91,6 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 	if page == "" {
 		page = "1"
 	}
-
-	fmt.Println("Search Query is: ", searchkey)
-	fmt.Println("Search page is: ", page)
 
 	search := &Search{}
 	search.SearchKey = searchkey
@@ -121,9 +123,31 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
 	search.TotalPages = int(math.Ceil(float64(search.Results.TotalResults) / float64(pageSize)))
+
+	// Проверяем, не является ли текущая страница последней, перед увеличением NextPage
+	if !search.IsLastPage() {
+		search.NextPage++
+	}
+
 	err = tpl.Execute(w, search)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
+}
+
+func (s *Search) IsLastPage() bool {
+	return s.NextPage >= s.TotalPages
+}
+
+func (s *Search) CurrentPage() int {
+	if s.NextPage == 1 {
+		return s.NextPage
+	}
+	return s.NextPage - 1
+}
+
+func (s *Search) PreviousPage() int {
+	return s.CurrentPage() - 1
 }
