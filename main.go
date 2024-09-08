@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"html/template"
 	"log"
@@ -57,11 +56,9 @@ func indexHandle(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	apiKey = flag.String("apikey", "", "Newsapi.org access key")
-	flag.Parse()
-
-	if *apiKey == "" {
-		log.Fatal("apiKey must be set")
+	apiKey := os.Getenv("API_KEY")
+	if apiKey == "" {
+		log.Fatal("API_KEY must be set")
 	}
 
 	port := os.Getenv("PORT")
