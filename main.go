@@ -49,14 +49,14 @@ type Search struct {
 
 var tpl = template.Must(template.ParseFiles("index.html"))
 
-var apiKey *string
+var apiKey string
 
 func indexHandle(w http.ResponseWriter, r *http.Request) {
 	tpl.Execute(w, nil)
 }
 
 func main() {
-	apiKey := os.Getenv("API_KEY")
+	apiKey = os.Getenv("API_KEY")
 	if apiKey == "" {
 		log.Fatal("API_KEY must be set")
 	}
@@ -101,7 +101,7 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 	search.NextPage = next
 	pageSize := 20
 
-	endpoint := fmt.Sprintf("https://newsapi.org/v2/everything?q=%s&pageSize=%d&page=%d&apiKey=%s&sortBy=publishedAt&language=en", url.QueryEscape(search.SearchKey), pageSize, search.NextPage, *apiKey)
+	endpoint := fmt.Sprintf("https://newsapi.org/v2/everything?q=%s&pageSize=%d&page=%d&apiKey=%s&sortBy=publishedAt&language=en", url.QueryEscape(search.SearchKey), pageSize, search.NextPage, apiKey)
 	resp, err := http.Get(endpoint)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -123,7 +123,6 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 
 	search.TotalPages = int(math.Ceil(float64(search.Results.TotalResults) / float64(pageSize)))
 
-	// Проверяем, не является ли текущая страница последней, перед увеличением NextPage
 	if !search.IsLastPage() {
 		search.NextPage++
 	}
